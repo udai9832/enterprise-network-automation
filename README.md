@@ -8,6 +8,8 @@ Everything starts from a single YAML inventory of lab devices (two routers and a
 
 The project is verified through an automated pytest suite, mocked Netmiko sessions, realistic Cisco IOS-style CLI fixtures, configuration fixtures and consistency tests. Optional GNS3 deployment documentation is included for anyone who wants to run the project against a dedicated virtual Cisco lab.
 
+![Architecture diagram: config/devices.yaml feeds inventory validation, which drives the connectivity check, SSH device information, configuration backup and configuration validation tools. Results go to CSV reports and terminal output. Device interactions use a simulated Cisco IOS-style lab (R1, R2, SW1), with an optional GNS3-compatible deployment reference.](screenshots/project_architecture.png)
+
 ## Key Features
 
 - **Device inventory management:** YAML inventory with validation (required fields, duplicate hostnames, malformed files)
@@ -69,7 +71,10 @@ enterprise-network-automation/
 ├── scripts/
 │   └── generate_demo_output.py # Regenerates docs/demo_output/ from the simulated lab
 ├── screenshots/
-│   └── README.md               # Optional live-lab screenshot checklist
+│   ├── project_architecture.png             # Architecture diagram
+│   ├── connectivity_device_info_demo.png    # Simulated demo output
+│   ├── config_validation_demo.png           # Simulated demo output
+│   └── README.md               # Visuals index + optional live-lab screenshot checklist
 ├── src/
 │   ├── inventory.py            # Load and validate the inventory
 │   ├── connectivity.py         # Ping one host and parse the result
@@ -201,6 +206,10 @@ How matching works:
 - A device is `ERROR` if its configuration could not be collected, `FAIL` if any check failed, and otherwise `PASS`.
 - Mistakes in the rules file (unknown keys, wrong types, duplicate or contradictory lines) are reported before any device is contacted.
 
+![Simulated validation demo: in the compliant run R1, R2 and SW1 all PASS 11/11. In the drift run R2 fails on a missing OSPF network line and SW1 fails on a prohibited ip http server line, so both report FAIL 10/11.](screenshots/config_validation_demo.png)
+
+*Simulated validation demo generated from mocked Netmiko sessions and Cisco IOS-style fixtures. No live GNS3 devices were used. Full output: [docs/demo_output/config_validation_demo.txt](docs/demo_output/config_validation_demo.txt).*
+
 ## Automated Testing
 
 ```powershell
@@ -229,6 +238,10 @@ Safeguards built into the suite:
 ## Demonstration Output
 
 > **Simulated / mock-backed demonstration output.** These files were produced by running the project's real command-line tools against a simulated Cisco lab. Ping replies and SSH sessions were replaced with fixture-backed fakes, so no real device, SSH session or GNS3 lab was used.
+
+![Simulated terminal output: the connectivity check reports R1 (192.168.100.11), R2 (192.168.100.12) and SW1 (192.168.100.21) as UP, 3 of 3 reachable. SSH device information collection succeeds for all three devices, showing IOS versions 15.9(3)M6 and 15.2, uptimes and interface counts.](screenshots/connectivity_device_info_demo.png)
+
+*Simulated demonstration generated from mocked Netmiko sessions and Cisco IOS-style fixtures. No live GNS3 devices were used.*
 
 | Demo | Shows |
 |---|---|

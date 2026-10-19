@@ -1,10 +1,20 @@
-# Screenshots (Optional)
+# Screenshots and Visuals
 
-Optional checklist for capturing screenshots from a live deployment of the reference lab ([docs/GNS3_LAB_SETUP.md](../docs/GNS3_LAB_SETUP.md)).
+## Included Visuals
 
-No live GNS3 deployment was performed as part of this project, so this folder contains no screenshots. Simulated, mock-backed demonstration output is available as text in [docs/demo_output/](../docs/demo_output/). Screenshots should only ever be added here if they come from a real lab run.
+| File | Content |
+|---|---|
+| [`project_architecture.png`](project_architecture.png) | Architecture diagram of the project's workflow and components |
+| [`connectivity_device_info_demo.png`](connectivity_device_info_demo.png) | **Simulated demo output**: connectivity check and SSH device information |
+| [`config_validation_demo.png`](config_validation_demo.png) | **Simulated demo output**: compliant validation run and drift detection |
 
-## Checklist
+The two terminal images show output from the project's real tools running against a simulated Cisco lab: mocked Netmiko sessions and Cisco IOS-style fixtures. Every output line is taken verbatim from the committed text files in [docs/demo_output/](../docs/demo_output/). They are not screenshots of a GNS3 lab.
+
+## Optional Live-Lab Screenshot Checklist
+
+No live GNS3 deployment was performed as part of this project, so there are no live-lab screenshots. If you deploy the reference lab ([docs/GNS3_LAB_SETUP.md](../docs/GNS3_LAB_SETUP.md)), use this checklist. Only add screenshots here if they come from a real lab run.
+
+### Checklist
 
 | File | Shows |
 |---|---|
@@ -15,7 +25,7 @@ No live GNS3 deployment was performed as part of this project, so this folder co
 | `config_validation.png` | Terminal: `python -m src.config_validation` PASS/FAIL table and summary |
 | `pytest_results.png` (optional) | Terminal: `python -m pytest -q` final result |
 
-## Privacy Rules
+### Privacy Rules
 
 Before saving a screenshot, check that it does **not** show:
 
