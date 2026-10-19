@@ -1,0 +1,31 @@
+# Python virtual environment
+.venv/
+venv/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated device backups and reports (keep the folders themselves)
+data/backups/*
+!data/backups/.gitkeep
+data/reports/*
+!data/reports/.gitkeep
+
+# Sensitive local configuration (credentials must never be committed)
+.env
+config/credentials.yaml
+config/*.local.yaml

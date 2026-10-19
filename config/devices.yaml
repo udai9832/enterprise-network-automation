@@ -1,0 +1,30 @@
+# GNS3 lab device inventory
+#
+# Fictional lab devices on a private management network (192.168.100.0/24).
+# Credentials are intentionally NOT stored here. They will be supplied
+# separately (environment variables / local ignored file) in a later phase.
+#
+# Required fields: hostname, device_type, host, role
+# Optional fields: model, description
+
+devices:
+  - hostname: R1
+    device_type: cisco_ios
+    host: 192.168.100.11
+    role: core-router
+    model: IOSv
+    description: Core router connecting the lab LAN segments
+
+  - hostname: R2
+    device_type: cisco_ios
+    host: 192.168.100.12
+    role: edge-router
+    model: IOSv
+    description: Edge router simulating the WAN / internet uplink
+
+  - hostname: SW1
+    device_type: cisco_ios
+    host: 192.168.100.21
+    role: access-switch
+    model: IOSvL2
+    description: Access switch for lab end hosts
