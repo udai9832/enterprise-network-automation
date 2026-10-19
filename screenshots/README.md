@@ -6,7 +6,7 @@
 |---|---|
 | [`project_architecture.png`](project_architecture.png) | Architecture diagram of the project's workflow and components |
 | [`connectivity_device_info_demo.png`](connectivity_device_info_demo.png) | **Simulated demo output**: connectivity check and SSH device information |
-| [`config_validation_demo.png`](config_validation_demo.png) | **Simulated demo output**: compliant validation run and drift detection |
+| [`config_validation_demo.png`](config_validation_demo.png) | **Simulated demo output**: (A) a compliant validation run with every device passing, and (B) an intentional drift-detection scenario in which problems are injected on purpose and the expected FAIL results show the validator enforcing the rules |
 
 The two terminal images show output from the project's real tools running against a simulated Cisco lab: mocked Netmiko sessions and Cisco IOS-style fixtures. Every output line is taken verbatim from the committed text files in [docs/demo_output/](../docs/demo_output/). They are not screenshots of a GNS3 lab.
 

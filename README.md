@@ -206,9 +206,11 @@ How matching works:
 - A device is `ERROR` if its configuration could not be collected, `FAIL` if any check failed, and otherwise `PASS`.
 - Mistakes in the rules file (unknown keys, wrong types, duplicate or contradictory lines) are reported before any device is contacted.
 
-![Simulated validation demo: in the compliant run R1, R2 and SW1 all PASS 11/11. In the drift run R2 fails on a missing OSPF network line and SW1 fails on a prohibited ip http server line, so both report FAIL 10/11.](screenshots/config_validation_demo.png)
+The demo below shows a compliant run, followed by an intentional drift test in which two configuration problems are injected on purpose. The FAIL results in the second scenario are expected: they show the validator catching the problems.
 
-*Simulated validation demo generated from mocked Netmiko sessions and Cisco IOS-style fixtures. No live GNS3 devices were used. Full output: [docs/demo_output/config_validation_demo.txt](docs/demo_output/config_validation_demo.txt).*
+![Simulated validation demo. Section A, compliant configuration: R1, R2 and SW1 all PASS 11/11. Section B, intentional drift detection: problems were injected on purpose, and the validator detects R2's missing OSPF network line and SW1's prohibited ip http server line. The summary shows R1 PASS 11/11, R2 FAIL 10/11, SW1 FAIL 10/11, the expected result for the drift test.](screenshots/config_validation_demo.png)
+
+*Simulated validation demo generated from mocked Netmiko sessions and Cisco IOS-style fixtures. The second scenario is an intentional drift test that demonstrates how the validator detects configuration problems. No live GNS3 devices were used. Full output: [docs/demo_output/config_validation_demo.txt](docs/demo_output/config_validation_demo.txt).*
 
 ## Automated Testing
 
@@ -248,7 +250,7 @@ Safeguards built into the suite:
 | [Connectivity check](docs/demo_output/connectivity_demo.txt) | Reachability table, summary and CSV report |
 | [Device information](docs/demo_output/device_info_demo.txt) | SSH collection results from IOSv-style routers and an IOSvL2-style switch |
 | [Configuration backup](docs/demo_output/config_backup_demo.txt) | Backup summary, report and timestamped file names |
-| [Configuration validation](docs/demo_output/config_validation_demo.txt) | A fully compliant run, and a drift scenario detected as FAIL |
+| [Configuration validation](docs/demo_output/config_validation_demo.txt) | A fully compliant run, and an intentional drift test in which the validator flags the injected problems as FAIL |
 | [Test suite](docs/demo_output/pytest_demo.txt) | Full `pytest` run with the number of tests per file |
 
 The files are regenerated with `python -m scripts.generate_demo_output`. A test checks that the committed files match what the code produces.
