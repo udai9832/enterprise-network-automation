@@ -1,0 +1,41 @@
+DEMONSTRATION OUTPUT - generated from simulated/mock lab data.
+
+The project's real command-line tools were run against a simulated Cisco lab:
+ping replies and SSH sessions were replaced with fixture-backed fakes that
+return saved Cisco IOS-style output (tests/fixtures/). No real device, SSH
+session or network connection was used. This is not output from a GNS3 lab.
+
+Regenerate with: python -m scripts.generate_demo_output
+
+Scenario: running-config backup of all three devices.
+Configuration contents are not shown here; only the summary and file names.
+
+$ python -m src.config_backup
+
+Backing up running configurations using inventory: config\devices.yaml
+
+HOSTNAME  HOST            ROLE           STATUS   BACKUP                   ERROR
+--------  --------------  -------------  -------  -----------------------  -----
+R1        192.168.100.11  core-router    SUCCESS  R1_20261019_100000.cfg
+R2        192.168.100.12  edge-router    SUCCESS  R2_20261019_100000.cfg
+SW1       192.168.100.21  access-switch  SUCCESS  SW1_20261019_100000.cfg
+
+Total devices: 3
+Successful backups: 3
+Failed backups: 0
+
+Backup directory: data\backups
+Report saved to: data\reports\config_backup_report.csv
+
+[exit code 0]
+
+--- data/reports/config_backup_report.csv ---
+hostname,host,role,status,backup_path,bytes_written,error,backed_up_at
+R1,192.168.100.11,core-router,SUCCESS,data\backups\R1_20261019_100000.cfg,1501,,2026-10-19T10:00:00
+R2,192.168.100.12,edge-router,SUCCESS,data\backups\R2_20261019_100000.cfg,1408,,2026-10-19T10:00:00
+SW1,192.168.100.21,access-switch,SUCCESS,data\backups\SW1_20261019_100000.cfg,1359,,2026-10-19T10:00:00
+
+--- files created in data/backups/ ---
+R1_20261019_100000.cfg
+R2_20261019_100000.cfg
+SW1_20261019_100000.cfg

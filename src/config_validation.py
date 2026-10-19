@@ -34,6 +34,7 @@ from pathlib import Path
 
 import yaml
 
+from src.cli import positive_int
 from src.config_backup import BackupError, get_running_config
 from src.inventory import DEFAULT_INVENTORY_PATH, PROJECT_ROOT, InventoryError, load_inventory
 from src.reports import REPORTS_DIR, format_table, write_csv_report
@@ -447,13 +448,6 @@ def dry_run(inventory_path, expected_path):
 
     print(f"\nCredentials OK: {USERNAME_ENV} and {PASSWORD_ENV} are set (values not shown).")
     return 0
-
-
-def positive_int(value):
-    number = int(value)
-    if number < 1:
-        raise argparse.ArgumentTypeError("must be 1 or greater")
-    return number
 
 
 def parse_args(argv=None):

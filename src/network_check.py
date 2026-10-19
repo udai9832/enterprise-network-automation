@@ -13,6 +13,7 @@ import argparse
 import sys
 from datetime import datetime
 
+from src.cli import positive_int
 from src.connectivity import PingResult, ping_host
 from src.inventory import DEFAULT_INVENTORY_PATH, InventoryError, load_inventory
 from src.reports import REPORTS_DIR, format_table, write_csv_report
@@ -108,13 +109,6 @@ def format_summary(summary):
         f"Reachable:     {summary['reachable']}\n"
         f"Unreachable:   {summary['unreachable']}"
     )
-
-
-def positive_int(value):
-    number = int(value)
-    if number < 1:
-        raise argparse.ArgumentTypeError("must be 1 or greater")
-    return number
 
 
 def parse_args(argv=None):

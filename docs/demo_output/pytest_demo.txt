@@ -1,0 +1,29 @@
+AUTOMATED TEST SUITE OUTPUT
+
+Result of running the project's pytest suite. All Cisco device interactions in
+the tests are simulated (mocked Netmiko sessions and saved Cisco IOS-style output),
+so no network, GNS3 lab or Cisco device is needed to run it.
+
+Regenerate with: python -m scripts.generate_demo_output
+
+$ python -m pytest -q
+
+........................................................................ [ 18%]
+........................................................................ [ 37%]
+........................................................................ [ 55%]
+........................................................................ [ 74%]
+........................................................................ [ 92%]
+.............................                                            [100%]
+389 passed in 5.92s
+
+Tests per file:
+   73  tests/test_config_backup.py
+  107  tests/test_config_validation.py
+   19  tests/test_connectivity.py
+   32  tests/test_demo_output.py
+   47  tests/test_device_info.py
+   19  tests/test_inventory.py
+   45  tests/test_lab_reference.py
+   21  tests/test_network_check.py
+    6  tests/test_reports.py
+   20  tests/test_ssh_client.py

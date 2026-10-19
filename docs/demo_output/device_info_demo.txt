@@ -1,0 +1,35 @@
+DEMONSTRATION OUTPUT - generated from simulated/mock lab data.
+
+The project's real command-line tools were run against a simulated Cisco lab:
+ping replies and SSH sessions were replaced with fixture-backed fakes that
+return saved Cisco IOS-style output (tests/fixtures/). No real device, SSH
+session or network connection was used. This is not output from a GNS3 lab.
+
+Regenerate with: python -m scripts.generate_demo_output
+
+Scenario: SSH collection from R1 and R2 (IOSv-style routers) and SW1 (IOSvL2-style switch).
+The routers reject 'show interfaces status', which is recorded in unsupported_commands.
+
+$ python -m src.device_info
+
+Collecting device information using inventory: config\devices.yaml
+
+HOSTNAME  HOST            SSH STATUS  DEVICE NAME  IOS VERSION            UPTIME                     INTF UP/TOTAL  ERROR
+--------  --------------  ----------  -----------  ---------------------  -------------------------  -------------  -----
+R1        192.168.100.11  success     R1           15.9(3)M6              2 hours, 14 minutes        3/5
+R2        192.168.100.12  success     R2           15.9(3)M6              2 hours, 11 minutes        3/5
+SW1       192.168.100.21  success     SW1          15.2(20170321:233949)  1 day, 3 hours, 5 minutes  3/5
+
+Total devices: 3
+Collected:     3
+Failed:        0
+
+Report saved to: data\reports\device_info_report.csv
+
+[exit code 0]
+
+--- data/reports/device_info_report.csv ---
+inventory_hostname,host,role,ssh_status,device_hostname,ios_version,uptime,interface_count,interfaces_up,interfaces_down,ip_interface_summary,switchport_summary,unsupported_commands,error,checked_at
+R1,192.168.100.11,core-router,success,R1,15.9(3)M6,"2 hours, 14 minutes",5,3,2,GigabitEthernet0/0 192.168.100.11 up/up; GigabitEthernet0/1 10.0.12.1 up/up; GigabitEthernet0/2 unassigned administratively down/down; GigabitEthernet0/3 unassigned up/down; Loopback0 1.1.1.1 up/up,,show interfaces status,,2026-10-19T10:00:00
+R2,192.168.100.12,edge-router,success,R2,15.9(3)M6,"2 hours, 11 minutes",5,3,2,GigabitEthernet0/0 192.168.100.12 up/up; GigabitEthernet0/1 10.0.12.2 up/up; GigabitEthernet0/2 unassigned administratively down/down; GigabitEthernet0/3 unassigned administratively down/down; Loopback0 2.2.2.2 up/up,,show interfaces status,,2026-10-19T10:00:00
+SW1,192.168.100.21,access-switch,success,SW1,15.2(20170321:233949),"1 day, 3 hours, 5 minutes",5,3,2,GigabitEthernet0/0 unassigned up/up; GigabitEthernet0/1 unassigned up/up; GigabitEthernet0/2 unassigned down/down; GigabitEthernet0/3 unassigned administratively down/down; Vlan1 192.168.100.21 up/up,"4 ports: 2 connected, 1 notconnect, 1 disabled",,,2026-10-19T10:00:00

@@ -1,0 +1,34 @@
+DEMONSTRATION OUTPUT - generated from simulated/mock lab data.
+
+The project's real command-line tools were run against a simulated Cisco lab:
+ping replies and SSH sessions were replaced with fixture-backed fakes that
+return saved Cisco IOS-style output (tests/fixtures/). No real device, SSH
+session or network connection was used. This is not output from a GNS3 lab.
+
+Regenerate with: python -m scripts.generate_demo_output
+
+Scenario: all three lab devices answer ping.
+
+$ python -m src.network_check
+
+Running connectivity check using inventory: config\devices.yaml
+
+HOSTNAME  HOST            ROLE           STATUS  LOSS  AVG RTT  ERROR
+--------  --------------  -------------  ------  ----  -------  -----
+R1        192.168.100.11  core-router    UP      0%    2.5 ms
+R2        192.168.100.12  edge-router    UP      0%    3.5 ms
+SW1       192.168.100.21  access-switch  UP      0%    4.5 ms
+
+Total devices: 3
+Reachable:     3
+Unreachable:   0
+
+Report saved to: data\reports\connectivity_report.csv
+
+[exit code 0]
+
+--- data/reports/connectivity_report.csv ---
+hostname,host,role,reachable,packets_sent,packets_received,packet_loss_percent,average_rtt_ms,error,checked_at
+R1,192.168.100.11,core-router,True,2,2,0.0,2.5,,2026-10-19T10:00:00
+R2,192.168.100.12,edge-router,True,2,2,0.0,3.5,,2026-10-19T10:00:00
+SW1,192.168.100.21,access-switch,True,2,2,0.0,4.5,,2026-10-19T10:00:00

@@ -55,7 +55,7 @@ interface GigabitEthernet0/3
 interface Vlan1
  ip address 192.168.100.21 255.255.255.0
 !
-ip default-gateway 192.168.100.1
+ip default-gateway 192.168.100.11
 ip forward-protocol nd
 !
 no ip http server

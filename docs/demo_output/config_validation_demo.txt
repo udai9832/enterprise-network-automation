@@ -1,0 +1,131 @@
+DEMONSTRATION OUTPUT - generated from simulated/mock lab data.
+
+The project's real command-line tools were run against a simulated Cisco lab:
+ping replies and SSH sessions were replaced with fixture-backed fakes that
+return saved Cisco IOS-style output (tests/fixtures/). No real device, SSH
+session or network connection was used. This is not output from a GNS3 lab.
+
+Regenerate with: python -m scripts.generate_demo_output
+
+Scenario 1: all three simulated devices match config/expected_config.yaml.
+
+$ python -m src.config_validation
+
+Validating running configurations using rules: config\expected_config.yaml
+
+DEVICE  CHECK                                                        STATUS  MESSAGE
+------  -----------------------------------------------------------  ------  -------
+R1      hostname R1                                                  PASS
+R1      ip ssh version 2                                             PASS
+R1      transport input ssh                                          PASS
+R1      router ospf 1                                                PASS
+R1      network 10.0.12.0 0.0.0.3 area 0                             PASS
+R1      prohibited: ip http server                                   PASS
+R1      prohibited: transport input telnet                           PASS
+R1      interface GigabitEthernet0/0                                 PASS
+R1      GigabitEthernet0/0: ip address 192.168.100.11 255.255.255.0  PASS
+R1      interface GigabitEthernet0/1                                 PASS
+R1      GigabitEthernet0/1: ip address 10.0.12.1 255.255.255.252     PASS
+R2      hostname R2                                                  PASS
+R2      ip ssh version 2                                             PASS
+R2      transport input ssh                                          PASS
+R2      router ospf 1                                                PASS
+R2      network 10.0.12.0 0.0.0.3 area 0                             PASS
+R2      prohibited: ip http server                                   PASS
+R2      prohibited: transport input telnet                           PASS
+R2      interface GigabitEthernet0/0                                 PASS
+R2      GigabitEthernet0/0: ip address 192.168.100.12 255.255.255.0  PASS
+R2      interface GigabitEthernet0/1                                 PASS
+R2      GigabitEthernet0/1: ip address 10.0.12.2 255.255.255.252     PASS
+SW1     hostname SW1                                                 PASS
+SW1     ip ssh version 2                                             PASS
+SW1     transport input ssh                                          PASS
+SW1     vlan 10                                                      PASS
+SW1     ip default-gateway 192.168.100.11                            PASS
+SW1     prohibited: ip http server                                   PASS
+SW1     prohibited: transport input telnet                           PASS
+SW1     interface Vlan1                                              PASS
+SW1     Vlan1: ip address 192.168.100.21 255.255.255.0               PASS
+SW1     interface GigabitEthernet0/0                                 PASS
+SW1     GigabitEthernet0/0: switchport mode trunk                    PASS
+
+Summary:
+DEVICE  RESULT  PASSED
+------  ------  ------
+R1      PASS    11/11
+R2      PASS    11/11
+SW1     PASS    11/11
+
+Detailed report saved to: data\reports\config_validation_report.csv
+Summary report saved to:  data\reports\config_validation_summary.csv
+
+[exit code 0]
+
+--- data/reports/config_validation_summary.csv ---
+hostname,host,role,total_checks,passed_checks,failed_checks,error_checks,overall_status,checked_at
+R1,192.168.100.11,core-router,11,11,0,0,PASS,2026-10-19T10:00:00
+R2,192.168.100.12,edge-router,11,11,0,0,PASS,2026-10-19T10:00:00
+SW1,192.168.100.21,access-switch,11,11,0,0,PASS,2026-10-19T10:00:00
+
+===============================================================================
+
+Scenario 2: configuration drift. In the simulated running-configs, R2 is missing
+its OSPF 'network 10.0.12.0 0.0.0.3 area 0' line and SW1 has 'ip http server' enabled.
+
+$ python -m src.config_validation
+
+Validating running configurations using rules: config\expected_config.yaml
+
+DEVICE  CHECK                                                        STATUS  MESSAGE
+------  -----------------------------------------------------------  ------  -----------------------------------
+R1      hostname R1                                                  PASS
+R1      ip ssh version 2                                             PASS
+R1      transport input ssh                                          PASS
+R1      router ospf 1                                                PASS
+R1      network 10.0.12.0 0.0.0.3 area 0                             PASS
+R1      prohibited: ip http server                                   PASS
+R1      prohibited: transport input telnet                           PASS
+R1      interface GigabitEthernet0/0                                 PASS
+R1      GigabitEthernet0/0: ip address 192.168.100.11 255.255.255.0  PASS
+R1      interface GigabitEthernet0/1                                 PASS
+R1      GigabitEthernet0/1: ip address 10.0.12.1 255.255.255.252     PASS
+R2      hostname R2                                                  PASS
+R2      ip ssh version 2                                             PASS
+R2      transport input ssh                                          PASS
+R2      router ospf 1                                                PASS
+R2      network 10.0.12.0 0.0.0.3 area 0                             FAIL    required line not found
+R2      prohibited: ip http server                                   PASS
+R2      prohibited: transport input telnet                           PASS
+R2      interface GigabitEthernet0/0                                 PASS
+R2      GigabitEthernet0/0: ip address 192.168.100.12 255.255.255.0  PASS
+R2      interface GigabitEthernet0/1                                 PASS
+R2      GigabitEthernet0/1: ip address 10.0.12.2 255.255.255.252     PASS
+SW1     hostname SW1                                                 PASS
+SW1     ip ssh version 2                                             PASS
+SW1     transport input ssh                                          PASS
+SW1     vlan 10                                                      PASS
+SW1     ip default-gateway 192.168.100.11                            PASS
+SW1     prohibited: ip http server                                   FAIL    prohibited configuration line found
+SW1     prohibited: transport input telnet                           PASS
+SW1     interface Vlan1                                              PASS
+SW1     Vlan1: ip address 192.168.100.21 255.255.255.0               PASS
+SW1     interface GigabitEthernet0/0                                 PASS
+SW1     GigabitEthernet0/0: switchport mode trunk                    PASS
+
+Summary:
+DEVICE  RESULT  PASSED
+------  ------  ------
+R1      PASS    11/11
+R2      FAIL    10/11
+SW1     FAIL    10/11
+
+Detailed report saved to: data\reports\config_validation_report.csv
+Summary report saved to:  data\reports\config_validation_summary.csv
+
+[exit code 1]
+
+--- data/reports/config_validation_summary.csv ---
+hostname,host,role,total_checks,passed_checks,failed_checks,error_checks,overall_status,checked_at
+R1,192.168.100.11,core-router,11,11,0,0,PASS,2026-10-19T10:00:00
+R2,192.168.100.12,edge-router,11,10,1,0,FAIL,2026-10-19T10:00:00
+SW1,192.168.100.21,access-switch,11,10,1,0,FAIL,2026-10-19T10:00:00

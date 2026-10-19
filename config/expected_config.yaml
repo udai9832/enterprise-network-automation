@@ -52,7 +52,7 @@ devices:
       - ip ssh version 2
       - transport input ssh
       - vlan 10
-      - ip default-gateway 192.168.100.1
+      - ip default-gateway 192.168.100.11   # R1, the core router
     prohibited_config_lines:
       - ip http server
       - transport input telnet

@@ -10,6 +10,7 @@ hostnames and private lab IP addresses.
 | `show_version_iosvl2.txt` | `show version` | Switch SW1 (IOSvL2) |
 | `show_version_iosxe.txt` | `show version` | IOS-XE router (format variation) |
 | `show_ip_interface_brief_router.txt` | `show ip interface brief` | Router R1 |
+| `show_ip_interface_brief_r2.txt` | `show ip interface brief` | Router R2 |
 | `show_ip_interface_brief_switch.txt` | `show ip interface brief` | Switch SW1 |
 | `show_interfaces_status_switch.txt` | `show interfaces status` | Switch SW1 |
 | `show_running_config_r1.txt` | `show running-config` | Router R1 (IOSv) |
@@ -19,3 +20,7 @@ hostnames and private lab IP addresses.
 
 The password hashes in the `show_running_config_*.txt` files are placeholders (`EXAMPLEONLY...`), not real secrets.
 The three running configurations match the rules in `config/expected_config.yaml`, so they all pass validation.
+
+These files are the simulated lab data for the tests and for `scripts/generate_demo_output.py`. They use
+the lab's hostnames, management IPs and R1-R2 link; individual switch port assignments may differ from the
+reference lab design. The reference configuration of the lab itself is in `docs/sample_configs/`.
