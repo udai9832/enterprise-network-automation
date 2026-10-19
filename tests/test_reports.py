@@ -2,7 +2,7 @@
 
 import csv
 
-from src.reports import REPORTS_DIR, write_csv_report
+from src.reports import REPORTS_DIR, format_table, write_csv_report
 
 
 def read_csv(path):
@@ -42,6 +42,17 @@ def test_write_csv_report_blank_for_missing_values(tmp_path):
     path = write_csv_report([{"hostname": "R1", "error": None}], tmp_path / "report.csv", ["hostname", "error"])
 
     assert read_csv(path) == [{"hostname": "R1", "error": ""}]
+
+
+def test_format_table():
+    table = format_table(("NAME", "IP"), [("R1", "192.168.100.11"), ("SW1", None)])
+
+    assert table.splitlines() == [
+        "NAME  IP",
+        "----  --------------",
+        "R1    192.168.100.11",
+        "SW1   None",
+    ]
 
 
 def test_reports_dir_is_data_reports():

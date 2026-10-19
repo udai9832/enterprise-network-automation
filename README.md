@@ -2,7 +2,7 @@
 
 Python automation toolkit for a Cisco lab network simulated in GNS3. The project automates routine network operations tasks: keeping a device inventory, testing reachability, collecting device information, backing up configurations, and validating configurations against expected standards.
 
-> **Status:** Phase 1 (Project Setup & Foundation) and Phase 2 (Device Connectivity Testing) are complete. Phases 3–6 are planned.
+> **Status:** Phase 1 (Project Setup & Foundation), Phase 2 (Device Connectivity Testing) and Phase 3 (Cisco Device Information Collection) are complete. Phases 4–6 are planned. Phase 3 code is verified with mocked SSH sessions; testing against the GNS3 lab is part of Phase 6.
 
 ## Project Objectives
 
@@ -21,8 +21,9 @@ Python automation toolkit for a Cisco lab network simulated in GNS3. The project
 | Reachability testing across the full inventory | Done (Phase 2) |
 | Command-line connectivity check with summary | Done (Phase 2) |
 | CSV connectivity report | Done (Phase 2) |
-| SSH connectivity to Cisco IOS devices | Planned (Phase 3) |
-| Device information collection (version, interfaces, etc.) | Planned (Phase 3) |
+| SSH connectivity to Cisco IOS devices (Netmiko) | Done (Phase 3), tested with mocks |
+| Device information collection (version, uptime, interfaces) | Done (Phase 3), tested with mocks |
+| CSV device information report | Done (Phase 3), tested with mocks |
 | Automated configuration backups | Planned (Phase 4) |
 | Configuration validation against expected settings | Planned (Phase 5) |
 | GNS3 lab integration and end-to-end testing | Planned (Phase 6) |
@@ -43,15 +44,28 @@ Python automation toolkit for a Cisco lab network simulated in GNS3. The project
 - **Command-line interface:** prints an aligned results table and a reachable/unreachable summary.
 - **CSV report** (`src/reports.py`): results are saved to `data/reports/connectivity_report.csv`.
 
+### Phase 3: Cisco Device Information Collection (complete, mock-tested)
+
+- **SSH client** (`src/ssh_client.py`): builds Netmiko `cisco_ios` connection parameters from the inventory and reads credentials from the `NETWORK_USERNAME` / `NETWORK_PASSWORD` environment variables. Authentication failures, connection timeouts and other connection errors are turned into clear, separate error types. Sessions are always disconnected safely.
+- **Device information collection** (`src/device_info.py`): runs read-only show commands on each device and parses the output:
+  - `show version`: device hostname, IOS version, uptime
+  - `show ip interface brief`: interface count, interfaces up/down, one-line interface summary
+  - `show interfaces status`: switch port summary (optional; routers reject this command, which is recorded and does not fail the device)
+- **Fault tolerance:** each device is processed one at a time. A device that fails authentication, times out or returns unexpected output is recorded with its status and error, and collection continues with the next device. Values that cannot be parsed are left blank, never guessed.
+- **Dry-run mode:** validates the inventory and credentials without opening any SSH connection.
+- **CSV report:** results are saved to `data/reports/device_info_report.csv`.
+- **Mock-based tests:** all SSH sessions in the test suite are simulated with saved Cisco IOSv / IOSvL2 / IOS-XE command outputs (`tests/fixtures/`). A test safeguard makes any test fail if it attempts a real SSH connection.
+
+> Phase 3 has not yet been run against live GNS3 devices. End-to-end lab testing is planned for Phase 6.
+
 ## Technologies
 
 - Python 3.12
 - PyYAML: device inventory
-- pytest: unit testing
+- Netmiko: SSH automation for Cisco IOS devices
+- pytest and unittest.mock: unit testing with simulated devices
 - GNS3: Cisco IOSv / IOSvL2 lab simulation
 - Git / GitHub: version control
-
-Netmiko (SSH automation) will be added when SSH features are built.
 
 ## Project Structure
 
@@ -67,13 +81,19 @@ enterprise-network-automation/
 │   ├── inventory.py          # Load and validate the device inventory
 │   ├── connectivity.py       # ICMP reachability testing for one host
 │   ├── network_check.py      # Inventory-wide connectivity check (CLI)
-│   └── reports.py            # CSV report export
+│   ├── ssh_client.py         # SSH credentials and Netmiko connections
+│   ├── device_info.py        # Cisco device information collection (CLI)
+│   └── reports.py            # CSV report export and table formatting
 ├── tests/
 │   ├── __init__.py
+│   ├── conftest.py           # Shared fixtures, real-SSH safeguard
+│   ├── fixtures/             # Sample Cisco IOS command outputs
 │   ├── test_inventory.py
 │   ├── test_connectivity.py
 │   ├── test_network_check.py
-│   └── test_reports.py
+│   ├── test_reports.py
+│   ├── test_ssh_client.py
+│   └── test_device_info.py
 ├── .gitignore
 ├── pytest.ini
 ├── requirements.txt
@@ -180,6 +200,107 @@ R2,192.168.100.12,edge-router,False,2,0,100.0,,no replies received (exit code 1)
 
 The file opens directly in Excel. Generated reports are excluded from Git by `.gitignore`.
 
+## Collecting Cisco Device Information
+
+### 1. Set the lab credentials
+
+SSH credentials are read from environment variables. They are **never** stored in `config/devices.yaml` or committed to Git, and they are never printed or written to reports. These credentials are for the dedicated Cisco/GNS3 lab devices only.
+
+```powershell
+# PowerShell: applies to the current terminal session only
+$env:NETWORK_USERNAME="labuser"
+$env:NETWORK_PASSWORD="example-password"
+```
+
+```bash
+# Linux / macOS
+export NETWORK_USERNAME="labuser"
+export NETWORK_PASSWORD="example-password"
+```
+
+The lab account needs to be able to run `show` commands. No configuration commands are sent to the devices.
+
+### 2. Validate the setup (no SSH)
+
+```powershell
+python -m src.device_info --dry-run
+```
+
+Checks the inventory and confirms that both credential variables are set, without connecting to any device:
+
+```
+Dry run: checking inventory and credentials. No SSH connections will be opened.
+
+Inventory OK: 3 device(s) in C:\enterprise-network-automation\config\devices.yaml
+
+HOSTNAME  HOST            ROLE           DEVICE TYPE
+--------  --------------  -------------  -----------
+R1        192.168.100.11  core-router    cisco_ios
+R2        192.168.100.12  edge-router    cisco_ios
+SW1       192.168.100.21  access-switch  cisco_ios
+
+Credentials OK: NETWORK_USERNAME and NETWORK_PASSWORD are set (values not shown).
+```
+
+### 3. Run the collection (requires the GNS3 lab)
+
+```powershell
+python -m src.device_info
+```
+
+> Only run this once the dedicated GNS3 lab is running and its devices are reachable on the `192.168.100.0/24` management network with SSH enabled. It connects only to the devices listed in the inventory. No network discovery or scanning is performed.
+
+Optional arguments:
+
+| Option | Default | Description |
+|---|---|---|
+| `--inventory PATH` | `config/devices.yaml` | Inventory file to use |
+| `--report PATH` | `data/reports/device_info_report.csv` | Where to save the CSV report |
+| `--timeout SECONDS` | `10` | SSH connection timeout |
+| `--dry-run` | off | Validate inventory and credentials only |
+
+Example output format, produced by the unit tests from simulated device output (R2 rejecting the credentials):
+
+```
+HOSTNAME  HOST            SSH STATUS   DEVICE NAME  IOS VERSION            UPTIME                     INTF UP/TOTAL  ERROR
+--------  --------------  -----------  -----------  ---------------------  -------------------------  -------------  --------------------------------------------
+R1        192.168.100.11  success      R1           15.9(3)M6              2 hours, 14 minutes        3/5
+R2        192.168.100.12  auth_failed  -            -                      -                          -              SSH authentication failed for 192.168.100.12
+SW1       192.168.100.21  success      SW1          15.2(20170321:233949)  1 day, 3 hours, 5 minutes  3/5
+
+Total devices: 3
+Collected:     2
+Failed:        1
+```
+
+**SSH status values:** `success`, `auth_failed`, `timeout`, `connection_failed`, `failed` (connected, but a required command failed).
+
+**Exit codes:** `0` = all devices collected, `1` = one or more devices failed, `2` = inventory, credential or report error.
+
+### CSV Device Information Report
+
+Each run overwrites `data/reports/device_info_report.csv` with one row per device:
+
+| Column | Description |
+|---|---|
+| `inventory_hostname` | Hostname from the inventory |
+| `host` | Management IP address |
+| `role` | Device role |
+| `ssh_status` | Result of the SSH session (see status values above) |
+| `device_hostname` | Hostname reported by the device (`show version`) |
+| `ios_version` | IOS software version (`show version`) |
+| `uptime` | Device uptime (`show version`) |
+| `interface_count` | Interfaces listed by `show ip interface brief` |
+| `interfaces_up` | Interfaces with Status **and** Protocol `up` |
+| `interfaces_down` | All other interfaces (down, administratively down, up/down) |
+| `ip_interface_summary` | One-line summary: interface, IP address, status/protocol |
+| `switchport_summary` | Switch port states from `show interfaces status` (switches only) |
+| `unsupported_commands` | Optional commands the device rejected |
+| `error` | Reason for a failure (blank on success) |
+| `checked_at` | Local timestamp of the collection |
+
+Values that could not be collected or parsed are left blank. Generated reports are excluded from Git by `.gitignore`.
+
 ## Using the Modules in Python
 
 ```python
@@ -189,23 +310,41 @@ results = run_connectivity_check()
 print(summarize_results(results))   # {'total': 3, 'reachable': 2, 'unreachable': 1}
 ```
 
+The parsers can be used on saved command output without any device:
+
+```python
+from src.device_info import parse_show_version
+
+with open("tests/fixtures/show_version_iosv.txt") as f:
+    print(parse_show_version(f.read()))
+# {'device_hostname': 'R1', 'ios_version': '15.9(3)M6', 'uptime': '2 hours, 14 minutes'}
+```
+
 ## Running Tests
 
 ```bash
 python -m pytest -v
 ```
 
-The tests do not require internet access, Cisco devices or a running GNS3 lab. Ping calls are replaced with mocks.
+The tests do not require internet access, Cisco devices, SSH access or a running GNS3 lab:
+
+- Ping calls are replaced with mocks.
+- SSH sessions are replaced with mock Netmiko connections that return saved Cisco IOS outputs from `tests/fixtures/`.
+- A shared safeguard in `tests/conftest.py` fails any test that tries to open a real SSH connection.
 
 ## Roadmap
 
 - [x] **Phase 1: Project Setup & Foundation** (complete). Project structure, device inventory, inventory validation, basic ping reachability, unit tests.
 - [x] **Phase 2: Device Connectivity Testing** (complete). Reachability tests across the whole inventory, command-line summary, CSV connectivity report.
-- [ ] **Phase 3: Cisco Device Information Collection.** SSH into devices and collect `show version`, interface status and other operational data.
+- [x] **Phase 3: Cisco Device Information Collection** (complete, mock-tested). SSH with Netmiko, environment-variable credentials, `show version` and interface parsing, CSV device information report.
 - [ ] **Phase 4: Automated Configuration Backup.** Save running configurations to timestamped backup files.
 - [ ] **Phase 5: Network Configuration Validation.** Check device configurations against expected settings and report deviations.
 - [ ] **Phase 6: GNS3 Integration, Final Testing & GitHub Polish.** Run workflows end-to-end against the GNS3 lab, finalize tests and documentation.
 
 ## Security Note
 
-This repository contains lab-only, private IP addresses and no credentials. Device credentials will be loaded from environment variables or a local file excluded by `.gitignore`.
+- This repository contains lab-only, private IP addresses and no credentials.
+- Device credentials are read from the `NETWORK_USERNAME` and `NETWORK_PASSWORD` environment variables at run time. They are never printed, logged or written to reports.
+- `.env` files, local credential files and log files are excluded by `.gitignore`.
+- The tools connect only to devices listed in the inventory. They do not perform network discovery or subnet scanning.
+- Only read-only `show` commands are sent to devices.

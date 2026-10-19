@@ -15,7 +15,7 @@ from datetime import datetime
 
 from src.connectivity import PingResult, ping_host
 from src.inventory import DEFAULT_INVENTORY_PATH, InventoryError, load_inventory
-from src.reports import REPORTS_DIR, write_csv_report
+from src.reports import REPORTS_DIR, format_table, write_csv_report
 
 DEFAULT_REPORT_PATH = REPORTS_DIR / "connectivity_report.csv"
 
@@ -86,12 +86,7 @@ def summarize_results(results):
 
 def format_results_table(results):
     """Return the results as an aligned text table."""
-    rows = [TABLE_HEADERS] + [_table_row(result) for result in results]
-    widths = [max(len(row[column]) for row in rows) for column in range(len(TABLE_HEADERS))]
-
-    lines = ["  ".join(value.ljust(width) for value, width in zip(row, widths)).rstrip() for row in rows]
-    lines.insert(1, "  ".join("-" * width for width in widths))
-    return "\n".join(lines)
+    return format_table(TABLE_HEADERS, [_table_row(result) for result in results])
 
 
 def _table_row(result):

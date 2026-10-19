@@ -1,0 +1,12 @@
+Cisco IOS XE Software, Version 16.09.05
+Cisco IOS Software [Fuji], Virtual XE Software (X86_64_LINUX_IOSD-UNIVERSALK9-M), Version 16.9.5, RELEASE SOFTWARE (fc1)
+Technical Support: http://www.cisco.com/techsupport
+Copyright (c) 1986-2020 by Cisco Systems, Inc.
+Compiled Thu 30-Jan-20 18:48 by mcpre
+
+ROM: IOS-XE ROMMON
+
+csr1 uptime is 3 weeks, 2 days, 1 hour, 7 minutes
+Uptime for this control processor is 3 weeks, 2 days, 1 hour, 9 minutes
+System returned to ROM by reload
+System image file is "bootflash:packages.conf"

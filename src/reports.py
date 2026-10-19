@@ -1,4 +1,4 @@
-"""Write automation results to report files in data/reports/."""
+"""Write automation results to report files in data/reports/ and format them for the terminal."""
 
 import csv
 from pathlib import Path
@@ -23,3 +23,13 @@ def write_csv_report(rows, path, fieldnames):
         writer.writerows(rows)
 
     return path
+
+
+def format_table(headers, rows):
+    """Return rows of values as an aligned plain-text table with a dashed line under the headers."""
+    rows = [tuple(headers)] + [tuple(str(value) for value in row) for row in rows]
+    widths = [max(len(row[column]) for row in rows) for column in range(len(headers))]
+
+    lines = ["  ".join(value.ljust(width) for value, width in zip(row, widths)).rstrip() for row in rows]
+    lines.insert(1, "  ".join("-" * width for width in widths))
+    return "\n".join(lines)

@@ -27,5 +27,9 @@ data/reports/*
 
 # Sensitive local configuration (credentials must never be committed)
 .env
+.env.*
 config/credentials.yaml
 config/*.local.yaml
+
+# SSH session logs (may contain device output)
+*.log

@@ -1,0 +1,6 @@
+
+Port      Name               Status       Vlan       Duplex  Speed Type 
+Gi0/0     Uplink to R1       connected    trunk      a-full   auto RJ45
+Gi0/1                        connected    1          a-full   auto RJ45
+Gi0/2                        notconnect   1            auto   auto RJ45
+Gi0/3                        disabled     1            auto   auto RJ45
