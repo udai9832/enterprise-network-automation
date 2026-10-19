@@ -258,20 +258,6 @@ GNS3 deployment is optional. The project does not need GNS3 to be installed: the
 - **Backups are sensitive:** real running configurations can contain password hashes, secrets and SNMP communities. Do not publish them.
 - **Lab only:** the tools connect only to devices listed in the inventory. There is no network discovery or scanning. All addresses in the repository are fictional private lab addresses, and the sample configurations contain placeholder secrets only.
 
-## Project Status
-
-**Project Status: Complete**
-
-| Phase | Scope | Status |
-|---|---|---|
-| 1. Project Setup & Foundation | Structure, inventory, inventory validation, ping, tests | Complete |
-| 2. Device Connectivity Testing | Inventory-wide reachability, CLI, CSV report | Complete |
-| 3. Cisco Device Information Collection | Netmiko SSH, credentials, `show` parsing, CSV report | Complete |
-| 4. Automated Configuration Backup | `show running-config` backups, safe file names, CSV report | Complete |
-| 5. Network Configuration Validation | Expected rules, PASS/FAIL/ERROR checks, detailed and summary reports | Complete |
-| 6. Documentation, Lab Reference, Simulated Validation & GitHub Polish | Lab topology and sample configurations, optional GNS3 guide, demonstration output, consistency tests, repository polish | Complete |
-
-What "complete" means here:
 
 - All automation features and the automated test suite are complete.
 - Cisco device behaviour is validated through mocked Netmiko sessions and realistic IOS-style fixtures. This simulated testing is complete.
