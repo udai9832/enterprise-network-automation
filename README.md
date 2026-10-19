@@ -2,7 +2,7 @@
 
 Python automation toolkit for a Cisco lab network simulated in GNS3. The project automates routine network operations tasks: keeping a device inventory, testing reachability, collecting device information, backing up configurations, and validating configurations against expected standards.
 
-> **Status:** Phase 1 (Project Setup & Foundation), Phase 2 (Device Connectivity Testing) and Phase 3 (Cisco Device Information Collection) are complete. Phases 4–6 are planned. Phase 3 code is verified with mocked SSH sessions; testing against the GNS3 lab is part of Phase 6.
+> **Status:** Phase 1 (Project Setup & Foundation), Phase 2 (Device Connectivity Testing), Phase 3 (Cisco Device Information Collection) and Phase 4 (Automated Configuration Backup) are complete. Phases 5–6 are planned. Phase 3 and Phase 4 code is verified with mocked SSH sessions; testing against the GNS3 lab is part of Phase 6.
 
 ## Project Objectives
 
@@ -24,7 +24,8 @@ Python automation toolkit for a Cisco lab network simulated in GNS3. The project
 | SSH connectivity to Cisco IOS devices (Netmiko) | Done (Phase 3), tested with mocks |
 | Device information collection (version, uptime, interfaces) | Done (Phase 3), tested with mocks |
 | CSV device information report | Done (Phase 3), tested with mocks |
-| Automated configuration backups | Planned (Phase 4) |
+| Automated running-configuration backups | Done (Phase 4), tested with mocks |
+| CSV configuration backup report | Done (Phase 4), tested with mocks |
 | Configuration validation against expected settings | Planned (Phase 5) |
 | GNS3 lab integration and end-to-end testing | Planned (Phase 6) |
 
@@ -58,6 +59,18 @@ Python automation toolkit for a Cisco lab network simulated in GNS3. The project
 
 > Phase 3 has not yet been run against live GNS3 devices. End-to-end lab testing is planned for Phase 6.
 
+### Phase 4: Automated Configuration Backup (complete, mock-tested)
+
+- **Configuration backup** (`src/config_backup.py`): connects to each device with the Phase 3 SSH client, runs `show running-config`, and saves the output to `data/backups/` as a timestamped `.cfg` file, for example `R1_20261019_125500.cfg`.
+- **Read-only:** the only command sent is `show running-config`. The tool never enters configuration mode, never sends configuration commands, and never runs `write memory` or `copy running-config startup-config`.
+- **Output checks:** empty output, Cisco CLI errors (`% Invalid input`, `% Authorization failed`, ...) and cut-off output (no final `end` line) are reported as failures and are **not** saved as backups.
+- **Safe file handling:** existing backups are never overwritten, hostnames are sanitized for filenames, and a half-written file is removed if saving fails.
+- **Fault tolerance:** one device failing (authentication, timeout, bad output, write error) does not stop the backups of the other devices.
+- **Dry-run mode** and a **CSV summary report** (`data/reports/config_backup_report.csv`).
+- **Mock-based tests:** SSH sessions are simulated with a sample IOSv running configuration. Tests check that no configuration-mode or save methods are ever called, and a safeguard fails any test that writes into the real `data/backups/` or `data/reports/` folders.
+
+> No real device backup has been performed yet. Running backups against the GNS3 lab is part of Phase 6.
+
 ## Technologies
 
 - Python 3.12
@@ -74,7 +87,7 @@ enterprise-network-automation/
 ├── config/
 │   └── devices.yaml          # Lab device inventory (no credentials)
 ├── data/
-│   ├── backups/              # Configuration backups (generated, not committed)
+│   ├── backups/              # Running-config backups (generated, not committed)
 │   └── reports/              # Generated reports (not committed)
 ├── src/
 │   ├── __init__.py
@@ -83,17 +96,19 @@ enterprise-network-automation/
 │   ├── network_check.py      # Inventory-wide connectivity check (CLI)
 │   ├── ssh_client.py         # SSH credentials and Netmiko connections
 │   ├── device_info.py        # Cisco device information collection (CLI)
+│   ├── config_backup.py      # Running-config backup (CLI)
 │   └── reports.py            # CSV report export and table formatting
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py           # Shared fixtures, real-SSH safeguard
+│   ├── conftest.py           # Shared fixtures and test safeguards
 │   ├── fixtures/             # Sample Cisco IOS command outputs
 │   ├── test_inventory.py
 │   ├── test_connectivity.py
 │   ├── test_network_check.py
 │   ├── test_reports.py
 │   ├── test_ssh_client.py
-│   └── test_device_info.py
+│   ├── test_device_info.py
+│   └── test_config_backup.py
 ├── .gitignore
 ├── pytest.ini
 ├── requirements.txt
@@ -301,6 +316,99 @@ Each run overwrites `data/reports/device_info_report.csv` with one row per devic
 
 Values that could not be collected or parsed are left blank. Generated reports are excluded from Git by `.gitignore`.
 
+## Backing Up Device Configurations
+
+The backup tool saves each device's running configuration using the read-only command:
+
+```
+show running-config
+```
+
+It uses the same inventory and the same `NETWORK_USERNAME` / `NETWORK_PASSWORD` environment variables as the device information collection (see [Set the lab credentials](#1-set-the-lab-credentials)).
+
+### Validate the setup (no SSH, no files)
+
+```powershell
+python -m src.config_backup --dry-run
+```
+
+Checks the inventory and credentials and shows what would be backed up. It opens no SSH connections and writes no files:
+
+```
+Dry run: checking inventory and credentials. No SSH connections will be opened and no files will be written.
+
+Inventory OK: 3 device(s) in C:\enterprise-network-automation\config\devices.yaml
+Backup directory: C:\enterprise-network-automation\data\backups
+
+HOSTNAME  HOST            ROLE           BACKUP FILE
+--------  --------------  -------------  -----------------------
+R1        192.168.100.11  core-router    R1_YYYYMMDD_HHMMSS.cfg
+R2        192.168.100.12  edge-router    R2_YYYYMMDD_HHMMSS.cfg
+SW1       192.168.100.21  access-switch  SW1_YYYYMMDD_HHMMSS.cfg
+
+Credentials OK: NETWORK_USERNAME and NETWORK_PASSWORD are set (values not shown).
+```
+
+### Run the backup (requires the GNS3 lab)
+
+```powershell
+python -m src.config_backup
+```
+
+> Only run this against the dedicated GNS3 lab, once its devices are reachable on the `192.168.100.0/24` management network with SSH enabled. It connects only to the devices listed in the inventory.
+
+Optional arguments:
+
+| Option | Default | Description |
+|---|---|---|
+| `--inventory PATH` | `config/devices.yaml` | Inventory file to use |
+| `--backup-dir PATH` | `data/backups` | Folder for the `.cfg` backup files |
+| `--report PATH` | `data/reports/config_backup_report.csv` | Where to save the CSV summary |
+| `--timeout SECONDS` | `10` | SSH connection timeout |
+| `--dry-run` | off | Validate inventory and credentials only |
+
+Example output format, produced by the unit tests from simulated device output (R2 rejecting the credentials):
+
+```
+HOSTNAME  HOST            ROLE           STATUS   BACKUP                   ERROR
+--------  --------------  -------------  -------  -----------------------  --------------------------------------------
+R1        192.168.100.11  core-router    SUCCESS  R1_20261019_125500.cfg
+R2        192.168.100.12  edge-router    FAILED   -                        SSH authentication failed for 192.168.100.12
+SW1       192.168.100.21  access-switch  SUCCESS  SW1_20261019_125500.cfg
+
+Total devices: 3
+Successful backups: 2
+Failed backups: 1
+```
+
+**Exit codes:** `0` = all devices backed up, `1` = one or more backups failed, `2` = inventory, credential or report error.
+
+### Backup Files
+
+- **Location:** `data/backups/`
+- **Filename:** `<HOSTNAME>_<YYYYMMDD>_<HHMMSS>.cfg`, using the inventory hostname and the local time of the backup (for example `R1_20261019_125500.cfg`). Every run creates new files, so older backups are kept.
+- **Collisions:** if a file with the same name already exists (two backups of one device in the same second), `_1`, `_2`, ... is added. An existing backup is never overwritten.
+- **Hostnames:** characters that are not safe in filenames (`/ \ : * ? " < > |`, spaces, ...) are replaced with `_`.
+- **Contents:** the running configuration exactly as returned by the device. Nothing is added: no credentials, connection details or script information.
+- **Not saved:** empty output, Cisco CLI error responses (`% Invalid input detected`, `% Authorization failed`, ...) and incomplete output that does not end with `end`. These are reported as `FAILED` with the reason.
+
+> **Warning:** real configuration backups can contain sensitive data such as local usernames, password hashes, enable secrets, SNMP communities and keys. Treat backup files as confidential and do not publish them. Generated backups in `data/backups/` are excluded from Git by `.gitignore`.
+
+### CSV Backup Report
+
+Each run overwrites `data/reports/config_backup_report.csv` with one row per device:
+
+| Column | Description |
+|---|---|
+| `hostname` | Hostname from the inventory |
+| `host` | Management IP address |
+| `role` | Device role |
+| `status` | `SUCCESS` or `FAILED` |
+| `backup_path` | Full path of the saved `.cfg` file (blank on failure) |
+| `bytes_written` | Size of the saved backup in bytes (blank on failure) |
+| `error` | Reason for a failure (blank on success) |
+| `backed_up_at` | Local timestamp of the backup attempt |
+
 ## Using the Modules in Python
 
 ```python
@@ -330,14 +438,14 @@ The tests do not require internet access, Cisco devices, SSH access or a running
 
 - Ping calls are replaced with mocks.
 - SSH sessions are replaced with mock Netmiko connections that return saved Cisco IOS outputs from `tests/fixtures/`.
-- A shared safeguard in `tests/conftest.py` fails any test that tries to open a real SSH connection.
+- Shared safeguards in `tests/conftest.py` fail any test that tries to open a real SSH connection, or that creates or changes files in the real `data/backups/` or `data/reports/` folders. Tests write to temporary folders instead.
 
 ## Roadmap
 
 - [x] **Phase 1: Project Setup & Foundation** (complete). Project structure, device inventory, inventory validation, basic ping reachability, unit tests.
 - [x] **Phase 2: Device Connectivity Testing** (complete). Reachability tests across the whole inventory, command-line summary, CSV connectivity report.
 - [x] **Phase 3: Cisco Device Information Collection** (complete, mock-tested). SSH with Netmiko, environment-variable credentials, `show version` and interface parsing, CSV device information report.
-- [ ] **Phase 4: Automated Configuration Backup.** Save running configurations to timestamped backup files.
+- [x] **Phase 4: Automated Configuration Backup** (complete, mock-tested). `show running-config` backups to timestamped `.cfg` files, output checks, dry-run mode, CSV backup report.
 - [ ] **Phase 5: Network Configuration Validation.** Check device configurations against expected settings and report deviations.
 - [ ] **Phase 6: GNS3 Integration, Final Testing & GitHub Polish.** Run workflows end-to-end against the GNS3 lab, finalize tests and documentation.
 
@@ -347,4 +455,5 @@ The tests do not require internet access, Cisco devices, SSH access or a running
 - Device credentials are read from the `NETWORK_USERNAME` and `NETWORK_PASSWORD` environment variables at run time. They are never printed, logged or written to reports.
 - `.env` files, local credential files and log files are excluded by `.gitignore`.
 - The tools connect only to devices listed in the inventory. They do not perform network discovery or subnet scanning.
-- Only read-only `show` commands are sent to devices.
+- Only read-only `show` commands are sent to devices. Netmiko also sets `terminal length 0` and `terminal width` for the SSH session; these affect only that session and do not change the device configuration.
+- Configuration backups can contain sensitive device data (password hashes, secrets, SNMP communities). Generated backups in `data/backups/` are excluded from Git and should not be published.

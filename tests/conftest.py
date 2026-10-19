@@ -4,7 +4,12 @@ from pathlib import Path
 
 import pytest
 
+from src.inventory import PROJECT_ROOT
+
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+# Real output folders. Tests must write to pytest's tmp_path instead.
+PROJECT_OUTPUT_DIRS = (PROJECT_ROOT / "data" / "backups", PROJECT_ROOT / "data" / "reports")
 
 
 def load_fixture(name):
@@ -24,6 +29,30 @@ def block_real_ssh(monkeypatch):
         pytest.fail(f"Real SSH connection attempted to {params.get('host')} - mock the SSH layer")
 
     monkeypatch.setattr("src.ssh_client.ConnectHandler", _blocked)
+
+
+def _snapshot_output_dirs():
+    """Return (path, modified time) for every file in the real output folders."""
+    return {
+        (path, path.stat().st_mtime_ns)
+        for folder in PROJECT_OUTPUT_DIRS
+        if folder.is_dir()
+        for path in folder.rglob("*")
+        if path.is_file()
+    }
+
+
+@pytest.fixture(autouse=True)
+def block_writes_to_project_data():
+    """Safety net: no test may create or change files in data/backups/ or data/reports/.
+
+    Real backups and reports belong to real runs; tests must use tmp_path.
+    """
+    before = _snapshot_output_dirs()
+    yield
+    changed = _snapshot_output_dirs() - before
+    if changed:
+        pytest.fail(f"Test wrote to project data folders (use tmp_path): {sorted(str(p) for p, _ in changed)}")
 
 
 @pytest.fixture

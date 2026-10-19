@@ -12,4 +12,7 @@ hostnames and private lab IP addresses.
 | `show_ip_interface_brief_router.txt` | `show ip interface brief` | Router R1 |
 | `show_ip_interface_brief_switch.txt` | `show ip interface brief` | Switch SW1 |
 | `show_interfaces_status_switch.txt` | `show interfaces status` | Switch SW1 |
+| `show_running_config_r1.txt` | `show running-config` | Router R1 (IOSv) |
 | `invalid_input.txt` | any unsupported command | Router (`% Invalid input detected`) |
+
+The password hashes in `show_running_config_r1.txt` are placeholders (`EXAMPLEONLY...`), not real secrets.
