@@ -1,8 +1,10 @@
 """Shared pytest fixtures."""
 
 from pathlib import Path
+from unittest import mock
 
 import pytest
+from netmiko.cisco import CiscoIosSSH
 
 from src.inventory import PROJECT_ROOT
 
@@ -15,6 +17,32 @@ PROJECT_OUTPUT_DIRS = (PROJECT_ROOT / "data" / "backups", PROJECT_ROOT / "data" 
 def load_fixture(name):
     """Return the text of a saved Cisco command output from tests/fixtures/."""
     return (FIXTURES_DIR / name).read_text(encoding="utf-8")
+
+
+def fake_ios_connection(output):
+    """A fake Netmiko Cisco IOS connection built from the real CiscoIosSSH class (autospec).
+
+    Only real Netmiko methods can be called, and every call can be checked
+    afterwards. send_command returns `output`, or raises it if it is an exception.
+    """
+    connection = mock.create_autospec(CiscoIosSSH, instance=True)
+    if isinstance(output, Exception):
+        connection.send_command.side_effect = output
+    else:
+        connection.send_command.return_value = output
+    return connection
+
+
+def assert_no_config_changes(connection):
+    """Fail if any Netmiko method that can change a device was used."""
+    connection.config_mode.assert_not_called()
+    connection.send_config_set.assert_not_called()
+    connection.send_config_from_file.assert_not_called()
+    connection.save_config.assert_not_called()
+    connection.send_command_timing.assert_not_called()
+    connection.write_channel.assert_not_called()
+    for call in connection.send_command.call_args_list:
+        assert call.args[0].startswith("show "), f"non-show command sent: {call.args[0]}"
 
 
 @pytest.fixture(autouse=True)

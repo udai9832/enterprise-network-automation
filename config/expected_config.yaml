@@ -1,0 +1,63 @@
+# Expected configuration for the GNS3 lab devices (fictional lab values only).
+#
+# Each device is listed by its inventory hostname (config/devices.yaml).
+# All keys are optional, but every device needs at least one rule:
+#
+#   hostname:                 value expected on the "hostname" line
+#   required_config_lines:    lines that must appear anywhere in the running-config
+#   prohibited_config_lines:  lines that must NOT appear in the running-config
+#   interfaces:               interface name -> lines that must appear under that interface
+#
+# Lines are compared exactly as whole lines (leading/trailing spaces ignored).
+# "no ip http server" does NOT match the prohibited line "ip http server".
+# Use full interface names as shown in "show running-config" (GigabitEthernet0/0, not Gi0/0).
+# Routing, VLAN and ACL checks are written as required lines (e.g. "router ospf 1", "vlan 10").
+
+devices:
+  R1:
+    hostname: R1
+    required_config_lines:
+      - ip ssh version 2
+      - transport input ssh
+      - router ospf 1
+      - network 10.0.12.0 0.0.0.3 area 0
+    prohibited_config_lines:
+      - ip http server
+      - transport input telnet
+    interfaces:
+      GigabitEthernet0/0:
+        - ip address 192.168.100.11 255.255.255.0
+      GigabitEthernet0/1:
+        - ip address 10.0.12.1 255.255.255.252
+
+  R2:
+    hostname: R2
+    required_config_lines:
+      - ip ssh version 2
+      - transport input ssh
+      - router ospf 1
+      - network 10.0.12.0 0.0.0.3 area 0
+    prohibited_config_lines:
+      - ip http server
+      - transport input telnet
+    interfaces:
+      GigabitEthernet0/0:
+        - ip address 192.168.100.12 255.255.255.0
+      GigabitEthernet0/1:
+        - ip address 10.0.12.2 255.255.255.252
+
+  SW1:
+    hostname: SW1
+    required_config_lines:
+      - ip ssh version 2
+      - transport input ssh
+      - vlan 10
+      - ip default-gateway 192.168.100.1
+    prohibited_config_lines:
+      - ip http server
+      - transport input telnet
+    interfaces:
+      Vlan1:
+        - ip address 192.168.100.21 255.255.255.0
+      GigabitEthernet0/0:
+        - switchport mode trunk

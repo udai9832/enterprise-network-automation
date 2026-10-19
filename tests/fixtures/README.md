@@ -13,6 +13,9 @@ hostnames and private lab IP addresses.
 | `show_ip_interface_brief_switch.txt` | `show ip interface brief` | Switch SW1 |
 | `show_interfaces_status_switch.txt` | `show interfaces status` | Switch SW1 |
 | `show_running_config_r1.txt` | `show running-config` | Router R1 (IOSv) |
+| `show_running_config_r2.txt` | `show running-config` | Router R2 (IOSv) |
+| `show_running_config_sw1.txt` | `show running-config` | Switch SW1 (IOSvL2) |
 | `invalid_input.txt` | any unsupported command | Router (`% Invalid input detected`) |
 
-The password hashes in `show_running_config_r1.txt` are placeholders (`EXAMPLEONLY...`), not real secrets.
+The password hashes in the `show_running_config_*.txt` files are placeholders (`EXAMPLEONLY...`), not real secrets.
+The three running configurations match the rules in `config/expected_config.yaml`, so they all pass validation.

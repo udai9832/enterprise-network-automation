@@ -2,7 +2,7 @@
 
 Python automation toolkit for a Cisco lab network simulated in GNS3. The project automates routine network operations tasks: keeping a device inventory, testing reachability, collecting device information, backing up configurations, and validating configurations against expected standards.
 
-> **Status:** Phase 1 (Project Setup & Foundation), Phase 2 (Device Connectivity Testing), Phase 3 (Cisco Device Information Collection) and Phase 4 (Automated Configuration Backup) are complete. Phases 5–6 are planned. Phase 3 and Phase 4 code is verified with mocked SSH sessions; testing against the GNS3 lab is part of Phase 6.
+> **Status:** Phases 1–5 are complete: Project Setup & Foundation, Device Connectivity Testing, Cisco Device Information Collection, Automated Configuration Backup and Network Configuration Validation. Phase 6 (GNS3 integration and final testing) is planned. Phase 3–5 code is verified with mocked SSH sessions; testing against the GNS3 lab is part of Phase 6.
 
 ## Project Objectives
 
@@ -26,7 +26,8 @@ Python automation toolkit for a Cisco lab network simulated in GNS3. The project
 | CSV device information report | Done (Phase 3), tested with mocks |
 | Automated running-configuration backups | Done (Phase 4), tested with mocks |
 | CSV configuration backup report | Done (Phase 4), tested with mocks |
-| Configuration validation against expected settings | Planned (Phase 5) |
+| Configuration validation against expected settings | Done (Phase 5), tested with mocks |
+| CSV validation reports (per check and per device) | Done (Phase 5), tested with mocks |
 | GNS3 lab integration and end-to-end testing | Planned (Phase 6) |
 
 ## Current Status
@@ -71,6 +72,18 @@ Python automation toolkit for a Cisco lab network simulated in GNS3. The project
 
 > No real device backup has been performed yet. Running backups against the GNS3 lab is part of Phase 6.
 
+### Phase 5: Network Configuration Validation (complete, mock-tested)
+
+- **Expected settings** (`config/expected_config.yaml`): a short, readable list of what each lab device should (and should not) have configured: hostname, required lines, prohibited lines and per-interface lines.
+- **Validation** (`src/config_validation.py`): collects each device's running configuration with `show running-config` (reusing the Phase 3 SSH client and the Phase 4 retrieval checks) and compares it line by line with the expected settings.
+- **Clear results:** every check is reported as `PASS`, `FAIL` or `ERROR`, and each device gets an overall result with a passed/total count.
+- **Rule checking:** mistakes in `expected_config.yaml` (unknown keys, wrong types, duplicate or contradictory lines) are reported before any device is contacted.
+- **Fault tolerance:** a device that cannot be reached, returns bad output or has no rules is reported as `ERROR`, and validation continues with the other devices.
+- **Dry-run mode** and two **CSV reports**: one row per check, and one row per device.
+- **Mock-based tests:** running configurations for R1, R2 and SW1 are simulated from sample files in `tests/fixtures/`. Tests confirm that only `show running-config` is sent and no configuration-mode or save methods are used.
+
+> No real Cisco configuration validation has been performed yet. Validating the live GNS3 devices is part of Phase 6.
+
 ## Technologies
 
 - Python 3.12
@@ -85,7 +98,8 @@ Python automation toolkit for a Cisco lab network simulated in GNS3. The project
 ```
 enterprise-network-automation/
 ├── config/
-│   └── devices.yaml          # Lab device inventory (no credentials)
+│   ├── devices.yaml          # Lab device inventory (no credentials)
+│   └── expected_config.yaml  # Expected configuration rules for validation
 ├── data/
 │   ├── backups/              # Running-config backups (generated, not committed)
 │   └── reports/              # Generated reports (not committed)
@@ -97,6 +111,7 @@ enterprise-network-automation/
 │   ├── ssh_client.py         # SSH credentials and Netmiko connections
 │   ├── device_info.py        # Cisco device information collection (CLI)
 │   ├── config_backup.py      # Running-config backup (CLI)
+│   ├── config_validation.py  # Configuration validation (CLI)
 │   └── reports.py            # CSV report export and table formatting
 ├── tests/
 │   ├── __init__.py
@@ -108,7 +123,8 @@ enterprise-network-automation/
 │   ├── test_reports.py
 │   ├── test_ssh_client.py
 │   ├── test_device_info.py
-│   └── test_config_backup.py
+│   ├── test_config_backup.py
+│   └── test_config_validation.py
 ├── .gitignore
 ├── pytest.ini
 ├── requirements.txt
@@ -409,6 +425,167 @@ Each run overwrites `data/reports/config_backup_report.csv` with one row per dev
 | `error` | Reason for a failure (blank on success) |
 | `backed_up_at` | Local timestamp of the backup attempt |
 
+## Validating Device Configurations
+
+Configuration validation checks each device's running configuration (`show running-config`, read-only) against the expected settings in `config/expected_config.yaml` and reports every check as `PASS`, `FAIL` or `ERROR`.
+
+### Expected configuration file
+
+```yaml
+devices:
+  R1:                                   # inventory hostname
+    hostname: R1                        # expected "hostname" line
+    required_config_lines:              # must appear anywhere in the config
+      - ip ssh version 2
+      - transport input ssh
+      - router ospf 1
+      - network 10.0.12.0 0.0.0.3 area 0
+    prohibited_config_lines:            # must NOT appear
+      - ip http server
+      - transport input telnet
+    interfaces:                         # lines that must appear under each interface
+      GigabitEthernet0/0:
+        - ip address 192.168.100.11 255.255.255.0
+      GigabitEthernet0/1:
+        - ip address 10.0.12.1 255.255.255.252
+```
+
+Every key is optional, but each device needs at least one rule. Empty lists are allowed. Mistakes in the file (unknown keys such as `required_lines`, lines that are not text, duplicate lines, or a line that is both required and prohibited) are reported with a clear error before any device is contacted.
+
+### Validation types
+
+| Check type | Passes when |
+|---|---|
+| `hostname` | The `hostname` line has the expected value |
+| `required_config` | The line is present anywhere in the running configuration |
+| `prohibited_config` | The line is **not** present |
+| `interface` | An `interface <name>` section exists |
+| `interface_config` | The line is present **inside** that interface section (an IP address on the wrong interface fails) |
+| `collection` | Always `ERROR`: the running configuration could not be collected (authentication, timeout, CLI error, ...) |
+| `rules` | Always `ERROR`: the device has no rules in `expected_config.yaml` |
+
+Routing, VLAN and ACL checks are written as required or prohibited lines, for example `router ospf 1`, `vlan 10` or `ip access-list standard MGMT-ONLY`.
+
+**Matching rules (simple and exact):**
+
+- Lines are compared as **whole lines**. Leading and trailing spaces are ignored and repeated spaces count as one. There is no partial or fuzzy matching.
+- Case matters: `IP SSH VERSION 2` does not match `ip ssh version 2`.
+- `no ip http server` does **not** match the prohibited line `ip http server`, so the safe setting passes.
+- An interface section is the indented lines directly under `interface <name>`, up to the next `!` or unindented line. Use full interface names as shown in `show running-config` (`GigabitEthernet0/0`, not `Gi0/0`).
+- Every device always gets the same number of checks, whatever its configuration. If an interface is missing, its expected lines are reported as `FAIL` too.
+
+**Device result:** `ERROR` if the configuration could not be checked, otherwise `FAIL` if any check failed, otherwise `PASS`.
+
+### Validate the setup (no SSH, no reports)
+
+```powershell
+python -m src.config_validation --dry-run
+```
+
+Checks the inventory, the expected rules and the credentials, and shows how many checks each device will get. It opens no SSH connections and writes no reports:
+
+```
+Dry run: checking inventory, expected rules and credentials. No SSH connections will be opened and no reports will be written.
+
+Inventory OK: 3 device(s) in C:\enterprise-network-automation\config\devices.yaml
+Expected rules OK: 3 device(s) in C:\enterprise-network-automation\config\expected_config.yaml
+
+HOSTNAME  HOST            ROLE           CHECKS
+--------  --------------  -------------  ------
+R1        192.168.100.11  core-router    11
+R2        192.168.100.12  edge-router    11
+SW1       192.168.100.21  access-switch  11
+
+Credentials OK: NETWORK_USERNAME and NETWORK_PASSWORD are set (values not shown).
+```
+
+Devices without rules, and rules for hostnames that are not in the inventory, are listed as warnings.
+
+### Run the validation (requires the GNS3 lab)
+
+```powershell
+python -m src.config_validation
+```
+
+> Only run this against the dedicated GNS3 lab, once its devices are reachable on the `192.168.100.0/24` management network with SSH enabled. It connects only to the devices listed in the inventory and only reads their configuration.
+
+Optional arguments:
+
+| Option | Default | Description |
+|---|---|---|
+| `--inventory PATH` | `config/devices.yaml` | Inventory file to use |
+| `--expected PATH` | `config/expected_config.yaml` | Expected configuration rules |
+| `--report PATH` | `data/reports/config_validation_report.csv` | Detailed CSV (one row per check) |
+| `--summary-report PATH` | `data/reports/config_validation_summary.csv` | Summary CSV (one row per device) |
+| `--timeout SECONDS` | `10` | SSH connection timeout |
+| `--dry-run` | off | Validate inventory, rules and credentials only |
+
+Example output format, produced by the unit tests from simulated device output (R2 not responding, SW1 with the HTTP server enabled):
+
+```
+DEVICE  CHECK                                                        STATUS  MESSAGE
+------  -----------------------------------------------------------  ------  ------------------------------------------
+R1      hostname R1                                                  PASS
+R1      ip ssh version 2                                             PASS
+R1      transport input ssh                                          PASS
+R1      router ospf 1                                                PASS
+R1      network 10.0.12.0 0.0.0.3 area 0                             PASS
+R1      prohibited: ip http server                                   PASS
+R1      prohibited: transport input telnet                           PASS
+R1      interface GigabitEthernet0/0                                 PASS
+R1      GigabitEthernet0/0: ip address 192.168.100.11 255.255.255.0  PASS
+R1      interface GigabitEthernet0/1                                 PASS
+R1      GigabitEthernet0/1: ip address 10.0.12.1 255.255.255.252     PASS
+R2      show running-config                                          ERROR   SSH connection to 192.168.100.12 timed out
+SW1     hostname SW1                                                 PASS
+SW1     ip ssh version 2                                             PASS
+SW1     transport input ssh                                          PASS
+SW1     vlan 10                                                      PASS
+SW1     ip default-gateway 192.168.100.1                             PASS
+SW1     prohibited: ip http server                                   FAIL    prohibited configuration line found
+SW1     prohibited: transport input telnet                           PASS
+SW1     interface Vlan1                                              PASS
+SW1     Vlan1: ip address 192.168.100.21 255.255.255.0               PASS
+SW1     interface GigabitEthernet0/0                                 PASS
+SW1     GigabitEthernet0/0: switchport mode trunk                    PASS
+
+Summary:
+DEVICE  RESULT  PASSED
+------  ------  ------
+R1      PASS    11/11
+R2      ERROR   0/1
+SW1     FAIL    10/11
+```
+
+**Exit codes:** `0` = all devices passed, `1` = one or more devices failed or could not be checked, `2` = inventory, expected config, credential or report error.
+
+### CSV Validation Reports
+
+`data/reports/config_validation_report.csv`: one row per check.
+
+| Column | Description |
+|---|---|
+| `hostname`, `host`, `role` | Device details from the inventory |
+| `check_type` | `hostname`, `required_config`, `prohibited_config`, `interface`, `interface_config`, `collection` or `rules` |
+| `check_name` | The line or item checked, for example `ip ssh version 2` |
+| `expected` | Expected value: hostname, `present` or `absent` |
+| `actual` | What was found: hostname, `present`, `absent` or `missing` |
+| `status` | `PASS`, `FAIL` or `ERROR` |
+| `message` | Short explanation, for example `prohibited configuration line found` |
+| `checked_at` | Local timestamp of the validation |
+
+`data/reports/config_validation_summary.csv`: one row per device.
+
+| Column | Description |
+|---|---|
+| `hostname`, `host`, `role` | Device details from the inventory |
+| `total_checks` | Number of checks run for the device |
+| `passed_checks` / `failed_checks` / `error_checks` | Count of each result |
+| `overall_status` | `PASS`, `FAIL` or `ERROR` |
+| `checked_at` | Local timestamp of the validation |
+
+Both reports are overwritten on each run and excluded from Git by `.gitignore`. They contain check results only, never credentials or full configurations.
+
 ## Using the Modules in Python
 
 ```python
@@ -426,6 +603,17 @@ from src.device_info import parse_show_version
 with open("tests/fixtures/show_version_iosv.txt") as f:
     print(parse_show_version(f.read()))
 # {'device_hostname': 'R1', 'ios_version': '15.9(3)M6', 'uptime': '2 hours, 14 minutes'}
+```
+
+The validation checks also work on saved configuration text, for example a sample file or a backup from `data/backups/`:
+
+```python
+from src.config_validation import load_expected_config, validate_config_text
+
+rules = load_expected_config()["R1"]
+with open("tests/fixtures/show_running_config_r1.txt") as f:
+    for check in validate_config_text(rules, f.read()):
+        print(check["status"], check["check_name"])
 ```
 
 ## Running Tests
@@ -446,7 +634,7 @@ The tests do not require internet access, Cisco devices, SSH access or a running
 - [x] **Phase 2: Device Connectivity Testing** (complete). Reachability tests across the whole inventory, command-line summary, CSV connectivity report.
 - [x] **Phase 3: Cisco Device Information Collection** (complete, mock-tested). SSH with Netmiko, environment-variable credentials, `show version` and interface parsing, CSV device information report.
 - [x] **Phase 4: Automated Configuration Backup** (complete, mock-tested). `show running-config` backups to timestamped `.cfg` files, output checks, dry-run mode, CSV backup report.
-- [ ] **Phase 5: Network Configuration Validation.** Check device configurations against expected settings and report deviations.
+- [x] **Phase 5: Network Configuration Validation** (complete, mock-tested). Expected settings in YAML, hostname / required / prohibited / interface checks, PASS/FAIL/ERROR results, detailed and summary CSV reports.
 - [ ] **Phase 6: GNS3 Integration, Final Testing & GitHub Polish.** Run workflows end-to-end against the GNS3 lab, finalize tests and documentation.
 
 ## Security Note
